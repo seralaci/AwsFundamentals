@@ -16,11 +16,11 @@ public class CustomerController : ControllerBase
     }
 
     [HttpPost("customers")]
-    public async Task<IActionResult> Create([FromBody] CustomerRequest request)
+    public async Task<IActionResult> Create([FromBody] CustomerRequest request, CancellationToken cancellationToken = default)
     {
         var customer = request.ToCustomer();
 
-        await _customerService.CreateAsync(customer);
+        await _customerService.CreateAsync(customer, cancellationToken);
 
         var customerResponse = customer.ToCustomerResponse();
 

@@ -1,5 +1,7 @@
-﻿using Customers.Api.Domain;
+﻿using Customers.Api.Contracts.Messages;
+using Customers.Api.Domain;
 using Customers.Api.Mapping;
+using Customers.Api.Messaging;
 using Customers.Api.Repositories;
 using FluentValidation;
 using FluentValidation.Results;
@@ -10,15 +12,19 @@ public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
     private readonly IGitHubService _gitHubService;
+    private readonly ISqsMessenger _sqsMessenger;
 
-    public CustomerService(ICustomerRepository customerRepository, 
-        IGitHubService gitHubService)
+    public CustomerService(
+        ICustomerRepository customerRepository, 
+        IGitHubService gitHubService, 
+        ISqsMessenger sqsMessenger)
     {
         _customerRepository = customerRepository;
         _gitHubService = gitHubService;
+        _sqsMessenger = sqsMessenger;
     }
 
-    public async Task<bool> CreateAsync(Customer customer)
+    public async Task<bool> CreateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         var existingUser = await _customerRepository.GetAsync(customer.Id);
         if (existingUser is not null)
@@ -35,7 +41,14 @@ public class CustomerService : ICustomerService
         }
         
         var customerDto = customer.ToCustomerDto();
-        return await _customerRepository.CreateAsync(customerDto);
+        var response =  await _customerRepository.CreateAsync(customerDto);
+
+        if (response)
+        {
+            await _sqsMessenger.SendMessageAsync(customer.ToCustomerCreatedMessage(), cancellationToken);
+        }
+
+        return response;
     }
 
     public async Task<Customer?> GetAsync(Guid id)
@@ -50,7 +63,7 @@ public class CustomerService : ICustomerService
         return customerDtos.Select(x => x.ToCustomer());
     }
 
-    public async Task<bool> UpdateAsync(Customer customer)
+    public async Task<bool> UpdateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         var customerDto = customer.ToCustomerDto();
         
@@ -61,12 +74,30 @@ public class CustomerService : ICustomerService
             throw new ValidationException(message, GenerateValidationError(nameof(customer.GitHubUsername), message));
         }
         
-        return await _customerRepository.UpdateAsync(customerDto);
+        var response = await _customerRepository.UpdateAsync(customerDto);
+        
+        if (response)
+        {
+            await _sqsMessenger.SendMessageAsync(customer.ToCustomerUpdatedMessage(), cancellationToken);
+        }
+
+        return response;
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _customerRepository.DeleteAsync(id);
+        var response = await _customerRepository.DeleteAsync(id);
+        
+        if (response)
+        {
+            var message = new CustomerDeleted
+            {
+                Id = id
+            };
+            await _sqsMessenger.SendMessageAsync(message, cancellationToken);
+        }
+
+        return response;
     }
 
     private static ValidationFailure[] GenerateValidationError(string paramName, string message)
