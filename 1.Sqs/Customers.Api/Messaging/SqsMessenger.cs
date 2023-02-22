@@ -40,7 +40,7 @@ public class SqsMessenger : ISqsMessenger
         return await _sqs.SendMessageAsync(sendMessageRequest, cancellationToken);
     }
 
-    private async Task<string> GetQueueUrlAsync(CancellationToken cancellationToken = default)
+    private async ValueTask<string> GetQueueUrlAsync(CancellationToken cancellationToken = default)
     {
         if (_queueUrl is not null)
         {
