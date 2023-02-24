@@ -7,11 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.15" />
-        <PackageReference Include="FluentValidation.AspNetCore" Version="11.2.2" />
-        <PackageReference Include="Dapper" Version="2.0.123" />
+        <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.101.33" />
+        <PackageReference Include="Kralizek.Extensions.Configuration.AWSSecretsManager" Version="1.7.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.3" />
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
