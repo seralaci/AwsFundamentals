@@ -12,6 +12,8 @@ builder.Configuration.AddSecretsManager(configurator: options =>
     options.KeyGenerator = (_, s) => s
         .Replace($"{env}_{appName}_", string.Empty)
         .Replace("__", ":");
+    
+    // Poll much less often in a production environment (e.g. 10 minutes)
     options.PollingInterval = TimeSpan.FromSeconds(10);
 });
 
